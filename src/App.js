@@ -1,4 +1,5 @@
-import "antd/dist/antd.css";
+// import "antd/dist/antd.css";
+import "antd/dist/antd.min.css";
 import React, { useLayoutEffect } from "react";
 import { Route, Switch, useLocation } from "react-router-dom";
 import Checkout from "./components/Checkout";
@@ -12,7 +13,8 @@ import Thanks from "./components/Thanks";
 export const config = {
   //endpoint: `http://${ipConfig.workspaceIp}:8082/api/v1`,
   //endpoint: 'http://qkart-frontend7.herokuapp.com/api/v1',
-  endpoint: 'https://qkart-shopping-site1.onrender.com/api/v1',
+  endpoint: 'https://qkart-shopping-site1.onrender.com/v1',
+  // endpoint: 'http://localhost:8082/v1'
 };
 
 export default function App(props) {
