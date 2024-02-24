@@ -35,9 +35,9 @@ class Login extends React.Component {
    * This is the function that is called when the user clicks on the login button or submits the login form
    *    - Display a message, "Login logic not implemented yet"
    */
-  login = async () => {
-    message.info("Login logic not implemented yet");
-  }
+  // login = async () => {
+  //   message.info("Login logic not implemented yet");
+  // }
   // TODO: CRIO_TASK_MODULE_LOGIN - Validate the input
   /**
    * Validate the input values so that any bad or illegal values are not passed to the backend.
@@ -95,7 +95,6 @@ class Login extends React.Component {
     if(response.status===400 && errored===false){
       response.success = false;
       response.message = "Password is incorrect";
-      //let data = await response.json();
       message.info(response.success,response.message);
       return false;
     }
@@ -142,26 +141,19 @@ class Login extends React.Component {
       let response = await fetch(config.endpoint + "/auth/login", {
         method : "POST",
         body:JSON.stringify({
-          username : this.state.username,
+          email : this.state.username,
           password : this.state.password,
         }),
         headers:{
           "content-type" : "application/json"
         },
       });
-      console.log("160",response);
       this.setState({loading:false});
       let data = await response.json();
       if(response.status === 400){
-        console.log(response.status);
         throw new Error(response.status, response.statusText);
-        //throw new Error(data);
       }
-      console.log(data);
 
-      //this.setState({loading:false});
-      // this.validateResponse(response.ok,response);
-      // return data;
       if(this.validateResponse(response.ok,response)){
         console.log("API call end success/n",data.token,data.balance,data.username);
         return data;
@@ -188,10 +180,12 @@ class Login extends React.Component {
    * -    `username` field in localStorage can be used to store the username that the user is logged in as
    * -    `balance` field in localStorage can be used to store the balance amount in the user's wallet
    */
-  persistLogin = (token, username, balance) => {
-    localStorage.setItem('token',token);
-    localStorage.setItem('username',username);
-    localStorage.setItem('balance',balance);
+  persistLogin = (token, email, balance, name, userId) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("email", email);
+    localStorage.setItem("balance", balance);
+    localStorage.setItem("username", name);
+    localStorage.setItem("userId", userId);
   };
 
   // TODO: CRIO_TASK_MODULE_LOGIN - Implement the login function
@@ -211,9 +205,11 @@ class Login extends React.Component {
      if(this.validateInput()){
       let res_performAPICall = await this.performAPICall();
       if(res_performAPICall){
-        this.persistLogin(res_performAPICall.token, res_performAPICall.username, res_performAPICall.balance);
-        this.state.username = "";
-        this.state.password = "";
+        this.persistLogin(res_performAPICall.tokens.access.token, res_performAPICall.user.email, res_performAPICall.user.walletMoney, res_performAPICall.user.name, res_performAPICall.user._id);
+        this.setState({
+          username: "",
+          password: ""
+        });
         message.info("Logged-In successfully!!");
         //redirects to products page.
         this.props.history.push("/products");

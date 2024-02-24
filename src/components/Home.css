@@ -1,6 +1,6 @@
 .home-buttons {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
 }
 .btn-block {
   width: max-content;

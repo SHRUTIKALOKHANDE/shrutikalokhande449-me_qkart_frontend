@@ -25,6 +25,7 @@ class Register extends React.Component {
     super();
     this.state = {
       loading: false,
+      email: "",
       username: "",
       password: "",
       confirmPassword: "",
@@ -36,10 +37,6 @@ class Register extends React.Component {
    * This is the function that is called when the user clicks on the register button or submits the register form
    *    - Display an alert message, "Register logic not implemented yet"
    */
-  register = async () => {
-    message.info("Register logic not implemented yet");
-    await this.performAPICall();
-  }
   // TODO: CRIO_TASK_MODULE_LOGIN - Implement user input validation logic
   /**
    * Validate the input values so that any bad or illegal values are not passed to the backend.
@@ -57,31 +54,6 @@ class Register extends React.Component {
    * -    Check that confirmPassword field has the same value as password field
    */
   validateInput = () => {
-    // if(this.state.username.length === 0){
-    //   message.info("Username is required field");
-    //   return false;
-    // }
-    // console.log(this.state.username.length);
-    // if(this.state.username.length < 6 || this.state.username.length > 32){
-    //    message.info("Username field should lies between 6-32 character");
-    //    return false;
-    // }
-    // if(this.state.password.length === 0){
-    //   message.info("Password is required field")
-    //   return false;
-    // }
-    // if(this.state.password.length < 6 || this.state.password.length > 32){
-    //   message.info("Password field should contain atleast 6 & atmost 32 character");
-    //   return false;
-    // }
-    // if(this.state.confirmPassword !== this.state.password){
-    //   message.info("Password & ConfirmPassword field should be same");
-    //   return false;
-    // }
-    // else{
-    //   return true;
-    // }
-
     if (!this.state.username) {
       message.error("Username is a required field");
       return false;
@@ -133,7 +105,7 @@ class Register extends React.Component {
    */
   validateResponse = (errored, response) => {
     //API call itself throws an error
-    if (errored || (!response.tokens && !response.message)) {
+    if (errored || (!response.tokens && !response.user)) {
       message.error(
         "Something went wrong. Check that the backend is running, reachable and returns valid JSON."
       );
@@ -182,38 +154,33 @@ class Register extends React.Component {
   /*curl -X POST -H "Content-Type: application/json" \
     >     -d '{"name": "crio.do", "password": "learnbydoing"}' \http://65.1.230.70:8082/api/v1/auth/register*/
    performAPICall = async () => {
-    this.setState({loading:true});
-    try{
-      let response = await fetch(config.endpoint + "/auth/register", {
-        method : "POST",
-        body:JSON.stringify({
-          'username' : this.state.username,
-          'password' : this.state.password,
-        }),
-        headers:{
-          "content-type" : "application/json"
-        },
-      });
-      console.log(response);
-      this.setState({loading:false});
-      let data = await response.json();
-      if(response.status === 400){
-        console.log(response.status);
-        throw new Error(response.status, response.statusText);
-        //throw new Error(data);
-      }
-      console.log(data);
-
-      this.setState({loading:false});
-      // this.validateResponse(response.ok,response);
-      // return data;
-      if(this.validateResponse(response.ok,response)){
-        console.log("API call end success/n"+data);
-        return data;
-      }
-    }  
-    catch(err){
-      return message.error(err+". Something went wrong. Check that the backend is running, reachable and returns valid JSON. ");
+    let response = {};
+    let errored = false;
+    this.setState({
+      loading: true,
+    });
+    try {
+      response = await (
+        await fetch(`${config.endpoint}/auth/register`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: this.state.username,
+            email: this.state.email,
+            password: this.state.password,
+          }),
+        })
+      ).json();
+    } catch (e) {
+      errored = true;
+    }
+    this.setState({
+      loading: false,
+    });
+    if (this.validateResponse(errored, response)) {
+      return response;
     }
   };
 
@@ -232,9 +199,12 @@ class Register extends React.Component {
      if(this.validateInput()){
       let res_performAPICall = await this.performAPICall();
         if(res_performAPICall){
-          this.state.username = "";
-          this.state.password = "";
-          this.state.confirmPassword = "";
+          // eslint-disable-next-line react/no-direct-mutation-state
+          this.setState({
+            username: "",
+            email:"",
+            password: "",
+          });
           message.info("Register successfully!!");
           //redirects to login page.
           this.props.history.push("/login");
@@ -257,6 +227,17 @@ class Register extends React.Component {
         <div className="flex-container">
           <div className="register-container container">
             <h1>Make an account</h1>
+
+            <Input
+              className="input-field"
+              prefix={<UserOutlined className="site-form-item-icon" />}
+              placeholder="Email"
+              onChange={(e) => {
+                this.setState({
+                  email: e.target.value,
+                });
+              }}
+            />
 
             {/* Antd component which renders a formatted <input type="text"> field */}
             <Input

@@ -162,9 +162,6 @@ class Search extends React.Component {
     if (perform_APICall) {
       this.products = perform_APICall;
       this.setState({ filteredProducts: perform_APICall });
-      console.log(this.state.filteredProducts);
-      console.log(this.products);
-
       this.setState({ loggedIn: perform_APICall.loggedIn });
     }
   };
@@ -178,7 +175,6 @@ class Search extends React.Component {
   async componentDidMount() {
     await this.getProducts();
     if (localStorage.getItem("username")) {
-      console.log("username : ", localStorage.getItem("username"));
       this.setState({ loggedIn: true });
     }
   };
@@ -196,11 +192,9 @@ class Search extends React.Component {
    */
   search = (text) => {
     text = text.toLowerCase();
-    console.log("text",text);
     let result;
     if(text.length===0){
       result = this.products;
-      console.log("1",result);
     }  
     else{
       result = this.products.filter(function(item){
@@ -268,7 +262,7 @@ class Search extends React.Component {
    */
   getProductElement = (product) => {
     return (
-      <Col xs={24} sm={12} xl={6} key={product._id}>
+      <Col className="gutter-row" span={6} key={product._id} style={{'padding-left': '8px', 'padding-right': '8px', 'minWidth': '200px' }}>
         <Product
           product={product}
           addToCart={() => {
@@ -314,7 +308,7 @@ class Search extends React.Component {
 
             <div className="search-container ">
               {/* Display each product item wrapped in a Col component */}
-              <Row>
+              <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }} style={{'marginLeft': '4px', 'marginRight': '4px'}}>
                 {this.products.length !== 0 ? (
                   this.state.filteredProducts.map((product) =>
                     this.getProductElement(product)

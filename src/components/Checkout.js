@@ -230,12 +230,17 @@ class Checkout extends React.Component {
 
     try {
       response = await (
-        await fetch(`${config.endpoint}/user/addresses`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
+        await fetch(
+          `${config.endpoint}/users/${localStorage.getItem(
+            "userId"
+          )}?q=address`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        )
       ).json();
     } catch (e) {
       errored = true;
@@ -248,7 +253,8 @@ class Checkout extends React.Component {
     if (this.validateResponse(errored, response, "fetch addresses")) {
       if (response) {
         this.setState({
-          addresses: response,
+          address:
+            response.address !== "ADDRESS_NOT_SET" ? response.address : "",
         });
       }
     }
@@ -292,16 +298,21 @@ class Checkout extends React.Component {
 
     try {
       response = await (
-        await fetch(`${config.endpoint}/user/addresses`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            address: this.state.newAddress,
-          }),
-        })
+        await fetch(
+          `${config.endpoint}/users/${localStorage.getItem(
+            "userId"
+          )}?q=address`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              address: this.state.newAddress,
+            }),
+          }
+        )
       ).json();
     } catch (e) {
       errored = true;
@@ -310,7 +321,6 @@ class Checkout extends React.Component {
     this.setState({
       loading: false,
     });
-
     if (this.validateResponse(errored, response, "add a new address")) {
       if (response) {
         message.success("Address added");
@@ -362,7 +372,6 @@ class Checkout extends React.Component {
   deleteAddress = async (addressId) => {
     let response = {};
     let errored = false;
-    //console.log(addressId);
     this.setState({loading:true});
     try {
       response = await (
@@ -431,38 +440,36 @@ class Checkout extends React.Component {
     });
 
     try {
-      response = await (
-        await fetch(`${config.endpoint}/cart/checkout`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            addressId: this.state.addresses[this.state.selectedAddressIndex]
-              ._id,
-          }),
-        })
-      ).json();
+      response = await fetch(`${config.endpoint}/cart/checkout`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      });
     } catch (e) {
       errored = true;
+      console.log(e);
     }
 
     this.setState({
       loading: false,
     });
 
-    if (this.validateResponse(errored, response, "checkout")) {
-        // TODO: CRIO_TASK_MODULE_CHECKOUT - 
-        // 1. Display a order successful message
-        // 2. Update user's balance in localStorage
-        // 3. Redirect to "/thanks" page
-        message.info("order successfully placed");
-        console.log(this.state.balance);
-        let totalCost = this.cartRef.current.calculateTotal();
-        this.setState({balance:this.state.balance-totalCost});
-        localStorage.setItem('balance',this.state.balance);
-        this.props.history.push("/thanks");
+    let data;
+    if (response.status !== 204) {
+      data = await response.json();
+    }
+    if (response.status === 204 || this.validateResponse(errored, data)) {
+      message.success("Order placed");
+
+      localStorage.setItem(
+        "balance",
+        parseInt(localStorage.getItem("balance")) -
+          this.cartRef.current.calculateTotal()
+      );
+
+      this.props.history.push("/thanks");
     }
   };
 
@@ -473,21 +480,21 @@ class Checkout extends React.Component {
    * -    Else if the user does not have any addresses, or has not selected an available address, then display an appropriate error message
    * -    Else call the checkout() method to proceed with placing and order
    */
-  order = async () => {
-    console.log(this.cartRef.current.calculateTotal());
-    let totalCost =this.cartRef.current.calculateTotal();
-    let userAddress = this.state.addresses;
-    console.log(userAddress);
-    if(this.state.balance < totalCost){
-      message.error("user's wallet balance is less than total cost.");
-    }
-    else if(!userAddress){
-      message.error("user does not have any address please fill the address field.");
-    }
-    else{
-      //this.setState({balance:this.state.balance-totalCost});
-      await this.checkout();
-    }
+  order = () => {
+    // console.log(this.cartRef.current.calculateTotal());
+    // let totalCost =this.cartRef.current.calculateTotal();
+    // let userAddress = this.state.addresses;
+    // console.log(userAddress);
+    // if(this.state.balance < totalCost){
+    //   message.error("user's wallet balance is less than total cost.");
+    // }
+    // else if(!userAddress){
+    //   message.error("user does not have any address please fill the address field.");
+    // }
+    // else{
+      // this.setState({balance:this.state.balance-totalCost});
+       this.checkout();
+    // }
   };
 
   // TODO: CRIO_TASK_MODULE_CHECKOUT - Implement the componentDidMount() lifecycle method
@@ -505,8 +512,6 @@ class Checkout extends React.Component {
       await this.getProducts();
       await this.getAddresses();
       this.setState({balance: localStorage.getItem("balance")});
-      //let a =await this.getAddresses();
-      console.log(this.state.addresses[this.state.selectedAddressIndex]);
     }
     else{
       message.error("User must be logged in first.");
@@ -539,62 +544,77 @@ class Checkout extends React.Component {
         {/* Display Checkout page content */}
         <div className="checkout-container">
           <Row>
-            {/* TODO: CRIO_TASK_MODULE_CHECKOUT - Cart should be shown on top of Shipping and Pricing blocks in "xs" devices */}
             {/* Display checkout instructions */}
-            <Col xs={{ span: 24, order:2}} md={{ span: 18, order:1}} >
+
+            <Col xs={{ span: 24, order: 2 }} md={{ span: 18, order: 1 }}>
               <div className="checkout-shipping">
                 <h1 style={{ marginBottom: "-10px" }}>Shipping</h1>
 
                 <hr></hr>
                 <br></br>
 
-                <p>
-                  Manage all the shipping addresses you want (work place, home
-                  address)<br></br>This way you won't have to enter the shipping
-                  address manually with each order.
-                </p>
+                <p>Shipping Address</p>
 
                 {/* Display the "Shipping" sectino */}
                 <div className="address-section">
-                  {this.state.addresses.length ? (
-                    // Display the list of addresses as radio buttons
-                    <Radio.Group
-                      className="addresses"
-                      defaultValue={this.state.selectedAddressIndex}
-                      onChange={(e) => {
-                        this.setState({
-                          selectedAddressIndex: e.target.value,
-                        });
-                      }}
-                    >
-                      <Row>
-                        {/* Create a view for each of the user's addresses */}
-                        {this.state.addresses.map((address, index) => (
-                          <Col xs={24} lg={12} key={address._id}>
-                            <div className="address">
-                              <Radio.Button value={index}>
-                                <div className="address-box">
-                                  {/* Display address title */}
-                                  <div className="address-text">
-                                    {address.address}
-                                  </div>
+                  {this.state.address && this.state.address.length ? (
+                    <div className="address-box">
+                      {/* Display address title */}
+                      <div className="address-text">{this.state.address}</div>
 
-                                  {/* TODO: CRIO_TASK_MODULE_CHECKOUT - Clicking on Delete button should call "deleteAddress" function with the correct argument*/}
-                                  {/* Display button to delete address from user's list */}
-                                  <Button
+                      {/* Display button to delete address from user's list */}
+                      {/* <Button
                                     type="primary"
-                                    onClick={()=>this.deleteAddress(address._id)}
+                                    
+                                    onClick={async () => {
+                                      await this.deleteAddress(address._id);
+                                    }}
+                                    
                                   >
                                     Delete
-                                  </Button>
-                                </div>
-                              </Radio.Button>
-                            </div>
-                          </Col>
-                        ))}
-                      </Row>
-                    </Radio.Group>
+                                  </Button> */}
+                    </div>
                   ) : (
+                    // Display the list of addresses as radio buttons
+                    // <Radio.Group
+                    //   className="addresses"
+                    //   defaultValue={this.state.selectedAddressIndex}
+                    //   onChange={e => {
+                    //     this.setState({
+                    //       selectedAddressIndex: e.target.value
+                    //     });
+                    //   }}
+                    // >
+                    //   <Row>
+                    //     {/* Create a view for each of the user's addresses */}
+                    //     {this.state.address && (
+                    //       <Col xs={24} lg={12} key={"address"}>
+                    //         <div className="address">
+                    //           <Radio.Button value={"address#1"}>
+                    //             <div className="address-box">
+                    //               {/* Display address title */}
+                    //               <div className="address-text">
+                    //                 {this.state.address}
+                    //               </div>
+
+                    //               {/* Display button to delete address from user's list */}
+                    //               {/* <Button
+                    //                 type="primary"
+
+                    //                 onClick={async () => {
+                    //                   await this.deleteAddress(address._id);
+                    //                 }}
+
+                    //               >
+                    //                 Delete
+                    //               </Button> */}
+                    //             </div>
+                    //           </Radio.Button>
+                    //         </div>
+                    //       </Col>
+                    //     )}
+                    //   </Row>
+                    // </Radio.Group>
                     // Display static text banner if no addresses are added
                     <div className="red-text checkout-row">
                       No addresses found. Please add one to proceed.
@@ -606,7 +626,11 @@ class Checkout extends React.Component {
                     <div>
                       <TextArea
                         className="new-address"
-                        placeholder="Add new address"
+                        placeholder={
+                          this.state.address
+                            ? "Update Address"
+                            : "Add new address"
+                        }
                         rows={4}
                         value={this.state.newAddress}
                         onChange={(e) => {
@@ -620,7 +644,9 @@ class Checkout extends React.Component {
                     {/* Button to submit address added */}
                     <div>
                       <Button type="primary" onClick={this.addAddress}>
-                        Add New Address
+                        {this.state.address
+                          ? "Update Address"
+                          : "Add new address"}
                       </Button>
                     </div>
                   </div>
@@ -658,9 +684,13 @@ class Checkout extends React.Component {
               </div>
             </Col>
 
-            {/* TODO: CRIO_TASK_MODULE_CHECKOUT - Cart should be shown on top of  Shipping and Pricing blocks in "xs" and "sm" devices */}
             {/* Display the cart */}
-            <Col xs={{ span: 24, order:1}} md={{span: 6, order:2}} className="checkout-cart" >
+
+            <Col
+              xs={{ span: 24, order: 1 }}
+              md={{ span: 6, order: 2 }}
+              className="checkout-cart"
+            >
               <div>
                 {this.state.products.length && (
                   <Cart

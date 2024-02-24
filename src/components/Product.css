@@ -1,7 +1,8 @@
 
 .product {
-  margin: 1em 2em;
+  margin: 1em 0.5em;
   overflow: hidden;
+  transition: transform 0.3s ease;
 }
 
 .product .ant-card-body {
@@ -11,10 +12,11 @@
 
 .product.ant-card-hoverable:hover {
   border-color: #d5d5d5;
+  transform: scale(1.1);
 }
 
 .product-image {
-  height: 250px;
+  height: 200px;
   width: 100%;
 }
 .product-image img {
@@ -32,20 +34,22 @@
 
 .product-info-text,
 .product-info-utility {
-  padding: 1em 1em;
+  padding: 0.5em 1em;
 }
 
 .product-title {
-  font-size: 1.3em;
+  font-size: 1em;
+  font-weight: 700;
 }
 
 .product-cost {
-  font-size: 1.5em;
+  font-size: 1em;
+  font-weight: 600;
+  margin-bottom: 0px;
 }
 
 .product-rating {
   font-size: 1em;
-  margin-bottom: 2em;
 }
 
 .product-category {

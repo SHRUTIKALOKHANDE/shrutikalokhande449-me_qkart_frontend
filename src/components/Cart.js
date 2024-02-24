@@ -17,7 +17,7 @@ import "./Cart.css";
 /**
  * @typedef {Object} CartItem
  * @property {string} productId - Unique ID for the product
- * @property {number} qty - Quantity of the product in cart
+ * @property {number} quantity - Quantity of the product in cart
  * @property {Product} product - Corresponding product object for that cart item
  */
 
@@ -52,7 +52,7 @@ export default class Cart extends React.Component {
    *
    * @param {boolean} errored
    *    Represents whether an error occurred in the process of making the API call itself
-   * @param {{ productId: string, qty: number }|{ success: boolean, message?: string }} response
+   * @param {{ productId: string, quantity: number }|{ success: boolean, message?: string }} response
    *    The response JSON object which may contain further success or error messages
    * @returns {boolean}
    *    Whether validation has passed or not
@@ -82,7 +82,7 @@ export default class Cart extends React.Component {
   /**
    * Perform the API call to fetch the user's cart and return the response
    *
-   * @returns {{ productId: string, qty: number }|{ success: boolean, message?: string }}
+   * @returns {{ productId: string, quantity: number }|{ success: boolean, message?: string }}
    *    The response JSON object
    *
    * -    Set the loading state variable to true
@@ -100,11 +100,11 @@ export default class Cart extends React.Component {
    * [
    *      {
    *          "productId": "KCRwjF7lN97HnEaY",
-   *          "qty": 3
+   *          "quantity": 3
    *      },
    *      {
    *          "productId": "BW0jAAeDJmlZCF8i",
-   *          "qty": 1
+   *          "quantity": 1
    *      }
    * ]
    *
@@ -155,7 +155,7 @@ export default class Cart extends React.Component {
    *
    * @param {string} productId
    *    ID of the product that is to be added or updated in cart
-   * @param {number} qty
+   * @param {number} quantity
    *    How many of the product should be in the cart
    * @param {boolean} fromAddToCartButton
    *    If this function was triggered from the product card's "Add to Cart" button
@@ -186,7 +186,7 @@ export default class Cart extends React.Component {
    */
  // curl --header "Content-Type: application/json " -d "{\"value\":\"node JS\"}" http://localhost:3000/test
 
-  pushToCart = async (productId, qty, fromAddToCartButton) => {
+  pushToCart = async (productId, quantity, fromAddToCartButton) => {
     if (fromAddToCartButton) {
       for (const item of this.state.items) {
         if (item.productId === productId) {
@@ -207,7 +207,6 @@ export default class Cart extends React.Component {
 
     try {
       // TODO: CRIO_TASK_MODULE_CART - Make an authenticated POST request to "/cart". JSON with properties - productId, qty are to be sent in the request body
-      console.log(localStorage.getItem("token"));
       response = await (
         await fetch(`${config.endpoint}/cart`, {
           method : "POST",
@@ -218,7 +217,7 @@ export default class Cart extends React.Component {
           },
           body:JSON.stringify({
             'productId' : productId,
-            'qty' : qty,
+            'quantity' : quantity,
           }),
           
         })
@@ -232,7 +231,6 @@ export default class Cart extends React.Component {
     });
 
     if (this.validateResponse(errored, response)) {
-      console.log(response);
       await this.refreshCart();
       return response;
     }
@@ -249,16 +247,15 @@ export default class Cart extends React.Component {
    */
   refreshCart = async () => {
     const cart = await this.getCart();
-    
-    if (cart) {
+    if (cart.cartItems) {
       this.setState({
-        items: cart.map((item) => ({
+        items: cart.cartItems.map((item) => ({
           ...item,
           product: this.props.products.find(
-            (product) => product._id === item.productId,
+            (product) => product._id === item.product._id
           ),
         })),
-      });
+      },() => {console.log("state", this.state)});
     }
 
   };
@@ -274,7 +271,7 @@ export default class Cart extends React.Component {
   calculateTotal = () => {
     return this.state.items.length
       ? this.state.items.reduce(
-          (total, item) => total + item.product.cost * item.qty,
+          (total, item) => total + item.product.cost * item.quantity,
           0
         )
       : 0;
@@ -288,10 +285,7 @@ export default class Cart extends React.Component {
    */
 
   async componentDidMount() {
-    console.log("componentDidMount");
     await this.refreshCart();
-    console.log("componentDidMount");
-
   }
 
   // TODO: CRIO_TASK_MODULE_CART - Implement getQuantityElement(). If props.checkout is not set, display a Input field.
@@ -310,7 +304,7 @@ export default class Cart extends React.Component {
       <InputNumber
         min={0}
         max={10}
-        defaultValue={item.qty}
+        defaultValue={item.quantity}
         onChange={(value) => {
           this.pushToCart(item.productId, value);
         }}
@@ -337,7 +331,7 @@ export default class Cart extends React.Component {
           <>
             {/* Display a card view for each product in the cart */}
             {this.state.items.map((item) => (
-              <Card className="cart-item" key={item.productId}>
+              <Card className="cart-item" key={item._id}>
                 {/* Display product image */}
                 <img
                   className="cart-item-image"
@@ -358,7 +352,7 @@ export default class Cart extends React.Component {
                     </div>
 
                     <div className="cart-item-cost">
-                      ₹{item.product.cost * item.qty}
+                      ₹{item.product.cost * item.quantity}
                     </div>
                   </div>
 
@@ -380,7 +374,7 @@ export default class Cart extends React.Component {
                 <div>Products</div>
                 <div>
                   {this.state.items.reduce(function (sum, item) {
-                    return sum + item.qty;
+                    return sum + item.quantity;
                   }, 0)}
                 </div>
               </div>

@@ -44,7 +44,7 @@ export default function Product(props) {
         {/* Display utility elements */}
         <div className="product-info-utility">
           {/* Display product cost */}
-          <div className="product-cost">{`₹${props.product.cost}`}</div>
+          <h6 className="product-cost">{`₹${props.product.cost}`}</h6>
 
           {/* Display star rating for the product on a scale of 5 */}
           <div className="product-rating">
